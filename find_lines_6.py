@@ -116,7 +116,7 @@ def compute_world_curvature(y_eval, left_fit_cr, right_fit_cr):
 
 
 # Create an image to draw on and an image to show the selection window
-def show_selection_windows(warped, left_fit, right_fit):
+def show_selection_windows(warped, left_fit, right_fit, left_lane_inds, right_lane_inds):
     
     nonzero = warped.nonzero()
     nonzeroy = np.array(nonzero[0])
@@ -157,7 +157,7 @@ def show_selection_windows(warped, left_fit, right_fit):
 
 
 # Visualization
-def visualize_polynomial_fit(warped, left_fit, right_fit):
+def visualize_polynomial_fit(warped, left_fit, right_fit, left_lane_inds, right_lane_inds):
     
     nonzero = warped.nonzero()
     nonzeroy = np.array(nonzero[0])
@@ -193,57 +193,224 @@ def mapto_original_image(image, warped, left_fit, right_fit):
 
     # Draw the lane onto the warped blank image
     cv2.fillPoly(color_warp, np.int_([pts]), (0,255, 0))
+    #plt.imshow(color_warp)
+    #plt.show()
 
     Minv = get_minv();
     # Warp the blank back to original image space using inverse perspective matrix (Minv)
-    newwarp = cv2.warpPerspective(color_warp, Minv, (image.shape[1], image.shape[0])) 
-    # Combine the result with the original image
-    result = cv2.addWeighted(image, 1, newwarp, 0.3, 0)
+    newwarp = cv2.warpPerspective(color_warp, Minv, (image.shape[1], image.shape[0]))
+    #plt.imshow(newwarp)
+    #plt.show()
+
+    # Combine the result with the original image.
+    print(image.shape)
+    print(newwarp.shape)
+    result = cv2.addWeighted(image[:,:,:3], 1, newwarp, 0.3, 0)
 
     return result
 
+
+class Line():
+    def __init__(self):
+        self.detected = False
+        self.curvature = 0
+        self.line_fit = None
+        self.frame_index = 0
+        # the current frame average x pixel value
+        self.x_value = None
+
+
+left_line_history = []
+right_line_history = []
+current_frame_index = 0
+
+# Check whether the current detected left/right line is correct one
+def pass_sanity_check(left_line, right_line):
+    global left_line_history, right_line_history
+
+    if (len(left_line_history) == 0):
+        return True
+        
+    left_curvature_sum = 0;
+    left_x_sum = 0 
+    for line in left_line_history:
+        left_curvature_sum += line.curvature
+        left_x_sum += line.x_value
+    left_curvature_average = left_curvature_sum / len(left_line_history)
+    left_line_x_average = left_x_sum / len(left_line_history)
+
+    right_curvature_sum = 0;
+    right_x_sum = 0
+    for line in right_line_history:
+        right_curvature_sum += line.curvature
+        right_x_sum += line.x_value
+    right_curvature_average = right_curvature_sum / len(right_line_history)
+    right_line_x_average = right_x_sum / len(right_line_history)
+                                                            
+    con1 = abs(left_curvature_average - left_line.curvature) >  left_curvature_average
+    con2 = abs(right_curvature_average - right_line.curvature) > right_curvature_average
+    con3 = abs(left_line_x_average - left_line.x_value) > left_line_x_average
+    con4 = abs(right_line_x_average - right_line.x_value) > right_line_x_average
+    print(con1, con2, con3, con4)                                      
+    if (con1 or con2 or con3 or con4):
+        return False
+    return True;
+
+def exportimage(image):
+    print(image.shape)
+    global current_frame_index;
+    current_frame_index += 1
+    imgPath = "images_1/image_" + str(current_frame_index) + ".jpg"
+    mpimg.imsave(imgPath, image)
+    newImage = image.copy()
+    return newImage
+
 def map_detected_region_to_image(image):
+    print(image.shape)
+    global left_line_history, right_line_history, current_frame_index
+    current_frame_index += 1
+
     colored_result, combined_result = pipeline(image)
+    if (False):
+        plt.imshow(combined_result)
+        plt.show()
     warped = warp(combined_result)
 
     nonzero = warped.nonzero()
     nonzeroy = np.array(nonzero[0])
     nonzerox = np.array(nonzero[1])
 
-    histogram = get_histogram(warped);
-    leftx_base, rightx_base = get_left_right_x_base_from_histogram(histogram)
-    left_lane_inds, right_lane_inds= get_left_right_lane_fit(warped, leftx_base, rightx_base)
-    leftx = nonzerox[left_lane_inds]
-    lefty = nonzeroy[left_lane_inds]
-    rightx = nonzerox[right_lane_inds]
-    righty = nonzeroy[right_lane_inds]
+    needToRestartSlidingWindowFinding = False
+    if len(left_line_history) == 0 or (current_frame_index - left_line_history[-1].frame_index) > 5:
+        needToRestartSlidingWindowFinding = True;
+    
+    left_line = Line();
+    right_line = Line();
 
-    left_fit, right_fit = get_left_right_lane_pixel_polynomial_fit(leftx, lefty, rightx, righty)
-    left_fit_cr_pixel, right_fit_cr_pixel = compute_pixel_curvature(image.shape[0], left_fit, right_fit)
-    left_fit_cr_world, right_fit_cr_world = get_left_right_lane_world_polynomial_fit(leftx, lefty, rightx, righty)
-    left_fit_cr_world, right_fit_cr_world = compute_world_curvature(image.shape[0], left_fit_cr_world, right_fit_cr_world)
+    needToRestartSlidingWindowFinding = True;
 
-    #show_selection_windows(warped, left_fit, right_fit)    
-    #visualize_polynomial_fit(warped, left_fit, right_fit)
+    if (needToRestartSlidingWindowFinding is True):
+        histogram = get_histogram(warped);
+        leftx_base, rightx_base = get_left_right_x_base_from_histogram(histogram)
+        left_lane_inds, right_lane_inds= get_left_right_lane_fit(warped, leftx_base, rightx_base)
+        leftx = nonzerox[left_lane_inds]
+        lefty = nonzeroy[left_lane_inds]
+        rightx = nonzerox[right_lane_inds]
+        righty = nonzeroy[right_lane_inds]
+
+        left_fit, right_fit = get_left_right_lane_pixel_polynomial_fit(leftx, lefty, rightx, righty)
+        left_fit_cr_pixel, right_fit_cr_pixel = compute_pixel_curvature(image.shape[0], left_fit, right_fit)
+        left_fit_cr_world, right_fit_cr_world = get_left_right_lane_world_polynomial_fit(leftx, lefty, rightx, righty)
+        left_fit_cr_world, right_fit_cr_world = compute_world_curvature(image.shape[0], left_fit_cr_world, right_fit_cr_world)
+
+#        out_img = np.dstack((warped, warped, warped))*255
+#        out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
+#        out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
+#        plt.imshow(out_img)
+#        ploty = np.linspace(0, warped.shape[0]-1, warped.shape[0] )
+#        left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
+#        right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+#        plt.plot(left_fitx, ploty, color='yellow')
+#        plt.plot(right_fitx, ploty, color='yellow')
+#        plt.xlim(0, 1280)
+#        plt.ylim(720, 0)
+#        plt.show()
+
+
+        # fill the left Line data
+        left_line.curvature = left_fit_cr_world
+        left_line.frame_index = current_frame_index
+        left_line.line_fit = left_fit
+        left_line.x_value = np.sum(leftx)/len(leftx)
+
+        # fill the right Line data
+        right_line.curvature = right_fit_cr_world
+        right_line.frame_index = current_frame_index
+        right_line.line_fit = right_fit
+        right_line.x_value = np.sum(rightx)/len(rightx)
+
+
+    else:
+        # use the previous found correct data to speed computation
+        margin_offset = 100       
+        # old left_fit, right_fit 
+        left_fit = left_line_history[-1].line_fit
+        right_fit = right_line_history[-1].line_fit
+
+        left_lane_inds = ((nonzerox > (left_fit[0]*(nonzeroy**2) + left_fit[1]*nonzeroy + 
+        left_fit[2] - margin_offset)) & (nonzerox < (left_fit[0]*(nonzeroy**2) + 
+        left_fit[1]*nonzeroy + left_fit[2] + margin_offset))) 
+
+        right_lane_inds = ((nonzerox > (right_fit[0]*(nonzeroy**2) + right_fit[1]*nonzeroy + 
+        right_fit[2] - margin_offset)) & (nonzerox < (right_fit[0]*(nonzeroy**2) + 
+        right_fit[1]*nonzeroy + right_fit[2] + margin_offset)))  
+
+        # Again, extract left and right line pixel positions
+        leftx = nonzerox[left_lane_inds]
+        lefty = nonzeroy[left_lane_inds] 
+        rightx = nonzerox[right_lane_inds]
+        righty = nonzeroy[right_lane_inds]
+        # Fit a second order polynomial to each
+        left_fit = np.polyfit(lefty, leftx, 2)
+        right_fit = np.polyfit(righty, rightx, 2)
+        # Generate x and y values for plotting
+        ploty = np.linspace(0, warped.shape[0]-1, warped.shape[0] )
+        left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
+        right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+
+        left_fit, right_fit = get_left_right_lane_pixel_polynomial_fit(leftx, lefty, rightx, righty)
+        left_fit_cr_pixel, right_fit_cr_pixel = compute_pixel_curvature(image.shape[0], left_fit, right_fit)
+        left_fit_cr_world, right_fit_cr_world = get_left_right_lane_world_polynomial_fit(leftx, lefty, rightx, righty)
+        left_fit_cr_world, right_fit_cr_world = compute_world_curvature(image.shape[0], left_fit_cr_world, right_fit_cr_world)
+
+
+
+        # fill the left Line data
+        left_line.curvature = left_fit_cr_world
+        left_line.frame_index = current_frame_index
+        left_line.line_fit = left_fit
+        left_line.x_value = sum(leftx)/len(leftx)
+
+        # fill the right Line data
+        right_line.curvature = right_fit_cr_world
+        right_line.frame_index = current_frame_index
+        right_line.line_fit = right_fit
+        right_line.x_value = sum(rightx)/len(rightx)
+
+    # check whether it passes the sanity check
+    if (pass_sanity_check(left_line, right_line)):
+        left_line_history.append(left_line)
+        right_line_history.append(right_line)
+        if (len(left_line_history) > 10):
+            left_line_history.pop(0)
+            right_line_history.pop(0)        
+    else:
+        # use the last correct frame data
+        left_fit = left_line_history[-1].line_fit
+        right_fit = right_line_history[-1].line_fit
+
+    #show_selection_windows(warped, left_fit, right_fit, left_lane_inds, right_lane_inds)    
+    #visualize_polynomial_fit(warped, left_fit, right_fit, left_lane_inds, right_lane_inds)
     
     result = mapto_original_image(image, warped, left_fit, right_fit)
+    #plt.imshow(result)
+    #plt.show()
     return result
+
 
 import imageio
 imageio.plugins.ffmpeg.download()
 from moviepy.editor import VideoFileClip
 def testVideo():
-    # Import everything needed to edit/save/watch video clips
     inputVideo = 'project_video.mp4'
-    ## To speed up the testing process you may want to try your pipeline on a shorter subclip of the video
-    ## To do so add .subclip(start_second,end_second) to the end of the line below
-    ## Where start_second and end_second are integer values representing the start and end of the subclip
-    ## You may also uncomment the following line for a subclip of the first 5 seconds
+    #inputVideo = 'project_video_output_1.mp4'
     outputVideo = 'project_video_output.mp4'
+
     clip1 = VideoFileClip(inputVideo)
     ##clip1 = VideoFileClip("test_videos/solidWhiteRight.mp4")
-    white_clip = clip1.fl_image(map_detected_region_to_image) #NOTE: this function expects color images!!
-    white_clip.write_videofile(outputVideo, audio=False)
+    output_clip = clip1.fl_image(map_detected_region_to_image) #NOTE: this function expects color images!!
+    #output_clip = clip1.fl_image(exportimage)
+    output_clip.write_videofile(outputVideo, audio=False)
 
 if __name__ == "__main__":
 
@@ -254,6 +421,24 @@ if __name__ == "__main__":
     #plt.imshow(result)
     #plt.show()
     try:
+        #image = mpimg.imread('test_images/test6.jpg')
+        #image = mpimg.imread('test_images/straight_lines2.jpg')
+        #image = mpimg.imread('test_images/signs_vehicles_xygrad.jpg')
+        
+        '''imageName = "images/image_"
+        for i in range(50):
+            imagePath = imageName + str(532 + i) + ".jpg"
+            image = mpimg.imread(imagePath)        
+            result = map_detected_region_to_image(image)
+            print("image path is: ", imagePath)
+            plt.imshow(result)
+            plt.show()
+        '''
+        #image = mpimg.imread('images/image_532.jpg')        
+        #result = map_detected_region_to_image(image)
+        #plt.imshow(result)
+        #plt.show()
+
         testVideo()
         print("--------------------------------")
     except:

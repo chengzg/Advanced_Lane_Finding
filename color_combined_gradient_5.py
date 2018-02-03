@@ -5,7 +5,7 @@ import matplotlib.image as mpimg
 
 
 # Edit this function to create your own pipeline.
-def pipeline(img, s_thresh=(170, 255), sx_thresh=(20, 100)):
+def pipeline(img, s_thresh=(170, 255), sx_thresh=(50, 100), sy_thread=(80, 100)):
 
     # Convert to HLS color space and separate the V channel
     hls = cv2.cvtColor(img, cv2.COLOR_RGB2HLS).astype(np.float)
@@ -25,6 +25,14 @@ def pipeline(img, s_thresh=(170, 255), sx_thresh=(20, 100)):
     sxbinary[(scaled_sobel >= sx_thresh[0]) & (scaled_sobel <= sx_thresh[1])] = 1
     print("sxbinary")
     #print(sxbinary)
+
+    # sobel y
+    sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1) 
+    abs_sobely = np.absolute(sobely)
+    scaled_sobel = np.uint8(255*abs_sobely/np.max(abs_sobely))
+    # Threshold y gradient
+    sybinary = np.zeros_like(scaled_sobel)
+    sybinary[(scaled_sobel >= sy_thread[0]) & (scaled_sobel <= sy_thread[1])] = 1
 
  
     # Threshold color channel
@@ -49,7 +57,7 @@ def pipeline(img, s_thresh=(170, 255), sx_thresh=(20, 100)):
 
 if __name__ == "__main__":
     try:
-        image = mpimg.imread('test_images/test1.jpg')
+        image = mpimg.imread('images/image_532.jpg')
         colored_result, combined_result = pipeline(image)
 
         # Plot the result

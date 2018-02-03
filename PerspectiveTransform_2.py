@@ -4,7 +4,7 @@ from matplotlib.lines import Line2D
 
 # define the constants to do the transform
 srcPnt1  = [579,  457]
-srcPnt2  = [699,  457]
+srcPnt2  = [702,  457]
 srcPnt3  = [1121, 719]
 srcPnt4  = [188,  719]
 destPnt1 = [300,  0]
@@ -61,7 +61,9 @@ if __name__ == "__main__":
     #imgPath = "test_images/test3.jpg"
     #imgPath = "test_images/test4.jpg"
     #imgPath = "test_images/test5.jpg"
-    imgPath = "test_images/test6.jpg"
+    #imgPath = "test_images/test6.jpg"
+    #imgPath = "images/image_533.jpg"
+    imgPath = "images/image_582.jpg"
     originalImg = readImg(imgPath)
     #displayImg(originalImg);
     #gray = processImg(originalImg)
@@ -71,7 +73,7 @@ if __name__ == "__main__":
     if (display):
         plt.imshow(originalImg)
         plt.plot(579,  457, ".")
-        plt.plot(699,  457, ".")
+        plt.plot(702,  457, ".")
         plt.plot(1121, 719, ".")
         plt.plot(188,  719, ".")
         plt.show()
