@@ -4,7 +4,8 @@ from color_combined_gradient_5 import *
 # find the histogram
 def get_histogram(img):    
     histogram = np.sum(img[img.shape[0]//2:, :], axis = 0)
-    if (False):
+    global dispaly    
+    if (display):
         plt.plot(histogram)
         plt.show()
     
@@ -157,8 +158,10 @@ def show_selection_windows(warped, left_fit, right_fit, left_lane_inds, right_la
 
 
 # Visualization
+start = 535
+increment = 0
 def visualize_polynomial_fit(warped, left_fit, right_fit, left_lane_inds, right_lane_inds):
-    
+
     nonzero = warped.nonzero()
     nonzeroy = np.array(nonzero[0])
     nonzerox = np.array(nonzero[1])
@@ -175,9 +178,43 @@ def visualize_polynomial_fit(warped, left_fit, right_fit, left_lane_inds, right_
     plt.plot(right_fitx, ploty, color='yellow')
     plt.xlim(0, 1280)
     plt.ylim(720, 0)
+    global increment, start
+    imagePath = "images_2/image_" + str(start + increment) + ".jpg"
+    increment += 1
+    plt.savefig(imagePath)
     plt.show()
+    
+
+def update_region_of_interested(left_up, right_up, right_down, left_down, minv):
+    
+    src = np.float32([left_up, right_up, right_down, left_down])
+    ones = np.ones(shape=(len(src), 1))
+    src_ones = np.hstack([src, ones])
+    #print(src_ones.shape)    
+    #print(minv.shape)
+    #dest = cv2.transform(src, minv)
+    dest = minv.dot(src_ones.T).T
+    #print(src.shape)
+    #print(dest.shape)
+    global srcPnt1, srcPnt2, srcPnt3, srcPnt4
+    srcPnt1 = dest_left_up = dest[0][0:2]/dest[0][2]
+    srcPnt1[0] -= 5
+    srcPnt2 = dest_right_up = dest[1][0:2]/dest[1][2]
+    srcPnt2[0] += 5
+    srcPnt3 = dest_right_down = dest[2][0:2]/dest[2][2]
+    srcPnt3[0] += 15
+    srcPnt4 = dest_left_down = dest[3][0:2]/dest[3][2]
+    srcPnt4[0] -= 15
+    
+    #print(srcPnt1, srcPnt2, srcPnt3, srcPnt4)
 
 
+def show_region_of_interests(image):
+    global srcPnt1, srcPnt2, srcPnt3, srcPnt4
+    x = [srcPnt1[0], srcPnt2[0], srcPnt3[0], srcPnt4[0]]
+    y = [srcPnt1[1], srcPnt2[1], srcPnt3[1], srcPnt4[1]]    
+    plt.fill(x, y, edgecolor="r", fill=False)
+    
 def mapto_original_image(image, warped, left_fit, right_fit):
     # Create an image to draw the lines on
     warp_zero = np.zeros_like(warped).astype(np.uint8)
@@ -191,16 +228,28 @@ def mapto_original_image(image, warped, left_fit, right_fit):
     pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
     pts = np.hstack((pts_left, pts_right))
 
+    left_up = pts_left[0][0]
+    right_up = pts_right[0][-1]
+    right_low = pts_right[0][0]
+    left_low = pts_left[0][-1]
+    #print(left_up, right_up, right_low, left_low)
+
+    
+
     # Draw the lane onto the warped blank image
     cv2.fillPoly(color_warp, np.int_([pts]), (0,255, 0))
-    #plt.imshow(color_warp)
-    #plt.show()
+    global display
+    if (display):
+        plt.imshow(color_warp)
+        plt.show()
 
     Minv = get_minv();
+    update_region_of_interested(left_up, right_up, right_low, left_low, Minv)
     # Warp the blank back to original image space using inverse perspective matrix (Minv)
     newwarp = cv2.warpPerspective(color_warp, Minv, (image.shape[1], image.shape[0]))
-    #plt.imshow(newwarp)
-    #plt.show()
+    if (display):
+        plt.imshow(newwarp)
+        plt.show()
 
     # Combine the result with the original image.
     print(image.shape)
@@ -253,7 +302,7 @@ def pass_sanity_check(left_line, right_line):
     con4 = abs(right_line_x_average - right_line.x_value) > right_line_x_average
     print(con1, con2, con3, con4)                                      
     if (con1 or con2 or con3 or con4):
-        return False
+        return True;        #return False
     return True;
 
 def exportimage(image):
@@ -271,7 +320,8 @@ def map_detected_region_to_image(image):
     current_frame_index += 1
 
     colored_result, combined_result = pipeline(image)
-    if (False):
+    global display;
+    if (display):
         plt.imshow(combined_result)
         plt.show()
     warped = warp(combined_result)
@@ -389,12 +439,23 @@ def map_detected_region_to_image(image):
         left_fit = left_line_history[-1].line_fit
         right_fit = right_line_history[-1].line_fit
 
-    #show_selection_windows(warped, left_fit, right_fit, left_lane_inds, right_lane_inds)    
-    #visualize_polynomial_fit(warped, left_fit, right_fit, left_lane_inds, right_lane_inds)
+    global display;
+    if (display):
+        show_selection_windows(warped, left_fit, right_fit, left_lane_inds, right_lane_inds)    
+        visualize_polynomial_fit(warped, left_fit, right_fit, left_lane_inds, right_lane_inds)
+
     
     result = mapto_original_image(image, warped, left_fit, right_fit)
-    #plt.imshow(result)
-    #plt.show()
+    
+    if (display):
+        plt.imshow(result)
+        show_region_of_interests(result)
+        plt.show()
+    
+    export_image = False
+    if (export_image):
+        imgPath = "images_1/image_" + str(current_frame_index) + ".jpg"
+        mpimg.imsave(imgPath, result)        
     return result
 
 
@@ -412,6 +473,7 @@ def testVideo():
     #output_clip = clip1.fl_image(exportimage)
     output_clip.write_videofile(outputVideo, audio=False)
 
+display = True
 if __name__ == "__main__":
 
     #image = mpimg.imread('test_images/test6.jpg')
@@ -425,21 +487,27 @@ if __name__ == "__main__":
         #image = mpimg.imread('test_images/straight_lines2.jpg')
         #image = mpimg.imread('test_images/signs_vehicles_xygrad.jpg')
         
-        '''imageName = "images/image_"
-        for i in range(50):
-            imagePath = imageName + str(532 + i) + ".jpg"
-            image = mpimg.imread(imagePath)        
-            result = map_detected_region_to_image(image)
-            print("image path is: ", imagePath)
-            plt.imshow(result)
-            plt.show()
-        '''
+        if (display):
+            imageName = "images/image_"      
+            global start
+            #start = 579             
+            #start = 1027
+            start = 1250
+            for i in range(50):
+                imagePath = imageName + str(start + i) + ".jpg"
+                image = mpimg.imread(imagePath)        
+                result = map_detected_region_to_image(image)
+                print("image path is: ", imagePath)
+                plt.imshow(result)
+                plt.show()
+        else:
+            testVideo()
         #image = mpimg.imread('images/image_532.jpg')        
         #result = map_detected_region_to_image(image)
         #plt.imshow(result)
         #plt.show()
 
-        testVideo()
+        
         print("--------------------------------")
     except:
         print("Unexpected error:", sys.exc_info()[0])

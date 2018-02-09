@@ -3,10 +3,14 @@ from matplotlib.lines import Line2D
 
 
 # define the constants to do the transform
-srcPnt1  = [579,  457]
-srcPnt2  = [702,  457]
-srcPnt3  = [1121, 719]
-srcPnt4  = [188,  719]
+srcPnt1  = [559,  457] #left_up
+srcPnt2  = [732,  457] #right_up
+srcPnt3  = [1191, 719] #right_down
+srcPnt4  = [138,  719] #right_up
+#srcPnt1  = [579,  457]
+#srcPnt2  = [702,  457]
+#srcPnt3  = [1121, 719]
+#srcPnt4  = [188,  719]
 destPnt1 = [300,  0]
 destPnt2 = [900,  0]
 destPnt3 = [900,  719]
