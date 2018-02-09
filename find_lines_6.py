@@ -198,13 +198,13 @@ def update_region_of_interested(left_up, right_up, right_down, left_down, minv):
     #print(dest.shape)
     global srcPnt1, srcPnt2, srcPnt3, srcPnt4
     srcPnt1 = dest_left_up = dest[0][0:2]/dest[0][2]
-    srcPnt1[0] -= 5
+    srcPnt1[0] -= 15
     srcPnt2 = dest_right_up = dest[1][0:2]/dest[1][2]
-    srcPnt2[0] += 5
+    srcPnt2[0] += 15
     srcPnt3 = dest_right_down = dest[2][0:2]/dest[2][2]
-    srcPnt3[0] += 15
+    srcPnt3[0] += 50
     srcPnt4 = dest_left_down = dest[3][0:2]/dest[3][2]
-    srcPnt4[0] -= 15
+    srcPnt4[0] -= 50
     
     #print(srcPnt1, srcPnt2, srcPnt3, srcPnt4)
 
@@ -214,7 +214,7 @@ def show_region_of_interests(image):
     x = [srcPnt1[0], srcPnt2[0], srcPnt3[0], srcPnt4[0]]
     y = [srcPnt1[1], srcPnt2[1], srcPnt3[1], srcPnt4[1]]    
     plt.fill(x, y, edgecolor="r", fill=False)
-    
+
 def mapto_original_image(image, warped, left_fit, right_fit):
     # Create an image to draw the lines on
     warp_zero = np.zeros_like(warped).astype(np.uint8)
@@ -322,7 +322,13 @@ def map_detected_region_to_image(image):
     colored_result, combined_result = pipeline(image)
     global display;
     if (display):
+        plt.imshow(image)
+        show_region_of_interests(image)
+        plt.show()
+
+    if (display):
         plt.imshow(combined_result)
+        
         plt.show()
     warped = warp(combined_result)
 
@@ -473,7 +479,7 @@ def testVideo():
     #output_clip = clip1.fl_image(exportimage)
     output_clip.write_videofile(outputVideo, audio=False)
 
-display = True
+display = False
 if __name__ == "__main__":
 
     #image = mpimg.imread('test_images/test6.jpg')
@@ -492,7 +498,8 @@ if __name__ == "__main__":
             global start
             #start = 579             
             #start = 1027
-            start = 1250
+            #start = 1250
+            start = 1
             for i in range(50):
                 imagePath = imageName + str(start + i) + ".jpg"
                 image = mpimg.imread(imagePath)        

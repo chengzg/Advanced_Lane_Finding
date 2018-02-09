@@ -3,19 +3,21 @@ from matplotlib.lines import Line2D
 
 
 # define the constants to do the transform
-srcPnt1  = [559,  457] #left_up
-srcPnt2  = [732,  457] #right_up
-srcPnt3  = [1191, 719] #right_down
-srcPnt4  = [138,  719] #right_up
-#srcPnt1  = [579,  457]
-#srcPnt2  = [702,  457]
-#srcPnt3  = [1121, 719]
-#srcPnt4  = [188,  719]
-destPnt1 = [300,  0]
-destPnt2 = [900,  0]
-destPnt3 = [900,  719]
-destPnt4 = [300,  719]
+srcWrapPnt1  = [559,  457] #left_up
+srcWrapPnt2  = [732,  457] #right_up
+srcWrapPnt3  = [1191, 719] #right_down
+srcWrapPnt4  = [138,  719] #right_up
 
+destWrapPnt1 = [300,  0]
+destWrapPnt2 = [900,  0]
+destWrapPnt3 = [900,  719]
+destWrapPnt4 = [300,  719]
+
+#define the constant to do region of interest
+srcPnt1  = [579,  457]
+srcPnt2  = [722,  457]
+srcPnt3  = [1251, 719]
+srcPnt4  = [188,  719]
 
 M = None
 Minv = None
@@ -25,16 +27,16 @@ def computerM_Minv():
     imgPath = "test_images/straight_lines1.jpg"
     img = readImg(imgPath)
     src = np.float32(
-            [srcPnt1,
-            srcPnt2,
-            srcPnt3,
-            srcPnt4
+            [srcWrapPnt1,
+            srcWrapPnt2,
+            srcWrapPnt3,
+            srcWrapPnt4
             ])
     dest = np.float32(
-            [destPnt1,
-            destPnt2,
-            destPnt3,
-            destPnt4 
+            [destWrapPnt1,
+            destWrapPnt2,
+            destWrapPnt3,
+            destWrapPnt4 
             ])
 
         
