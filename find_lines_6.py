@@ -1,5 +1,6 @@
 from PerspectiveTransform_2 import *
 from color_combined_gradient_5 import *
+from defined_globals import *
 
 # find the histogram
 def get_histogram(img):    
@@ -23,8 +24,6 @@ def get_left_right_x_base_from_histogram(histogram, left_margin=150, right_margi
     return leftx_base, rightx_base
 
 
-margin = 100
-minpix = 50
 def get_left_right_lane_fit(warped, leftx_base, rightx_base, nwindows=9, margin=100, minpix=50):
     
     #nwindows = 9
@@ -91,9 +90,7 @@ def compute_pixel_curvature(y_eval, left_fit, right_fit):
     return left_curverad, right_curverad
 
 
-# Define conversions in x and y from pixels space to meters
-ym_per_pix = 30/720 # meters per pixel in y dimension
-xm_per_pix = 3.7/600 # meters per pixel in x dimension
+
 def get_left_right_lane_world_polynomial_fit(leftx, lefty, rightx, righty):
 
     # Fit new polynomials to x,y in world space
@@ -157,9 +154,6 @@ def show_selection_windows(warped, left_fit, right_fit, left_lane_inds, right_la
     plt.show()
 
 
-# Visualization
-start = 535
-increment = 0
 def visualize_polynomial_fit(warped, left_fit, right_fit, left_lane_inds, right_lane_inds):
 
     nonzero = warped.nonzero()
@@ -178,9 +172,9 @@ def visualize_polynomial_fit(warped, left_fit, right_fit, left_lane_inds, right_
     plt.plot(right_fitx, ploty, color='yellow')
     plt.xlim(0, 1280)
     plt.ylim(720, 0)
-    global increment, start
-    imagePath = "images_2/image_" + str(start + increment) + ".jpg"
-    increment += 1
+    global testing_increment, testing_start
+    imagePath = "images_2/image_" + str(testing_start + testing_increment) + ".jpg"
+    testing_increment += 1
     plt.savefig(imagePath)
     plt.show()
     
@@ -268,10 +262,6 @@ class Line():
         # the current frame average x pixel value
         self.x_value = None
 
-
-left_line_history = []
-right_line_history = []
-current_frame_index = 0
 
 # Check whether the current detected left/right line is correct one
 def pass_sanity_check(left_line, right_line):
@@ -458,7 +448,9 @@ def map_detected_region_to_image(image):
         show_region_of_interests(result)
         plt.show()
     
-    export_image = False
+
+    # Here is to export the processed image
+    export_image = True
     if (export_image):
         imgPath = "images_1/image_" + str(current_frame_index) + ".jpg"
         mpimg.imsave(imgPath, result)        
@@ -473,6 +465,7 @@ def testVideo():
     #inputVideo = 'project_video_output_1.mp4'
     outputVideo = 'project_video_output.mp4'
 
+    #clip1 = VideoFileClip(inputVideo).subclip(0, 5)
     clip1 = VideoFileClip(inputVideo)
     ##clip1 = VideoFileClip("test_videos/solidWhiteRight.mp4")
     output_clip = clip1.fl_image(map_detected_region_to_image) #NOTE: this function expects color images!!
@@ -495,13 +488,13 @@ if __name__ == "__main__":
         
         if (display):
             imageName = "images/image_"      
-            global start
-            #start = 579             
-            #start = 1027
-            #start = 1250
-            start = 1
+            global testing_start
+            #testing_start = 579             
+            #testing_start = 1027
+            #testing_start = 1250
+            testing_start = 18
             for i in range(50):
-                imagePath = imageName + str(start + i) + ".jpg"
+                imagePath = imageName + str(testing_start + i) + ".jpg"
                 image = mpimg.imread(imagePath)        
                 result = map_detected_region_to_image(image)
                 print("image path is: ", imagePath)

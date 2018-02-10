@@ -1,26 +1,8 @@
+from defined_globals import *
 from camera_calibration_1 import *
 from matplotlib.lines import Line2D 
 
 
-# define the constants to do the transform
-srcWrapPnt1  = [559,  457] #left_up
-srcWrapPnt2  = [732,  457] #right_up
-srcWrapPnt3  = [1191, 719] #right_down
-srcWrapPnt4  = [138,  719] #right_up
-
-destWrapPnt1 = [300,  0]
-destWrapPnt2 = [900,  0]
-destWrapPnt3 = [900,  719]
-destWrapPnt4 = [300,  719]
-
-#define the constant to do region of interest
-srcPnt1  = [579,  457]
-srcPnt2  = [722,  457]
-srcPnt3  = [1251, 719]
-srcPnt4  = [188,  719]
-
-M = None
-Minv = None
 def computerM_Minv():
     global M, Minv
     # it is the sample image
