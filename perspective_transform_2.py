@@ -20,7 +20,6 @@ def computerM_Minv():
             destWrapPnt3,
             destWrapPnt4 
             ])
-
         
     M = cv2.getPerspectiveTransform(src, dest)
 
@@ -32,6 +31,8 @@ def get_minv():
     return Minv
 
 def warp(img):
+    img = getUndistortedImg(img)
+
     global M
     img_size = (img.shape[1], img.shape[0])
     if (M is None):

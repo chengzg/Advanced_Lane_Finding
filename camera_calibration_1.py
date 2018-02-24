@@ -4,13 +4,14 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import sys 
 import os
+from defined_globals import *
 #%matplotlib inline
 
 def processImg(img):
     img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    
 
     return img
+
 def displayImg(img, isGrayscale=False):
     if isGrayscale is True:
         plt.imshow(img, cmap="gray")
@@ -32,10 +33,7 @@ def readFolderImgs(folderPath="."):
             jpgImgs.append(os.path.join(folderPath, file))
 
     return jpgImgs
-
-
-    
-
+ 
 def getAllPoints(imgPaths):
     
     # 3D real obj points
@@ -61,43 +59,52 @@ def getAllPoints(imgPaths):
             
             if (ret is True):
                 
-                print(index)
+                print("find board corner for", index, path)
+
+                if (False):  
+                    cv2.drawChessboardCorners(originalImg, imgDimension, corners, ret)
+                    plt.imshow(originalImg)
+                    plt.show()
+
+
                 imgPoints.append(corners)
                 objPoints.append(objPs)
-                print("===========, ", len(objPoints))
+            else:
+                print("fail to find board corner for img ", index, path)
             index += 1                
         return imgPoints, objPoints 
     except:
         print("Unexpected error:", sys.exc_info()[0])
 
-initialized = False
-mtx = dist = newcameramtx = None
-def getUndistortedImg(inputImg):
-    global initialized;
+def getUndistortedImg(inputImg, imgPaths=None):
     global mtx, dist, newcameramtx;
-    if initialized is False:
+    if newcameramtx is None:
+        if (imgPaths is None):
+            imgPaths = readFolderImgs("./camera_cal")
+        gray = processImg(inputImg)
         imgPoints, objPoints = getAllPoints(imgPaths);
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objPoints, imgPoints, gray.shape[::-1], None, None)
         h, w = inputImg.shape[:2]
         newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
-        initialized = True
 
     dstImg = cv2.undistort(inputImg, mtx, dist, None, newcameramtx)
     return dstImg
 
-if __name__ == "main":
-    imgPaths = readFolderImgs("./camera_cal");
-    originalImg = readImg(imgPaths[5])
-    displayImg(originalImg);
-    gray = processImg(originalImg)
-    dstImg = getUndistortedImg(originalImg)
+if __name__ == "__main__":
+    try:
+        imgPaths = readFolderImgs("./camera_cal");
+        originalImg = readImg(imgPaths[13])
+        displayImg(originalImg);
+        gray = processImg(originalImg)
+        dstImg = getUndistortedImg(originalImg)
 
-    displayImg(dstImg)
+        displayImg(dstImg)
 
+        originalImg = readImg(imgPaths[8])
+        displayImg(originalImg);
+        gray = processImg(originalImg)
+        dstImg = getUndistortedImg(originalImg)
 
-    originalImg = readImg(imgPaths[8])
-    displayImg(originalImg);
-    gray = processImg(originalImg)
-    dstImg = getUndistortedImg(originalImg)
-
-    displayImg(dstImg)
+        displayImg(dstImg)
+    except:
+        print("Unexpected error:", sys.exc_info()[0])

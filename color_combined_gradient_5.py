@@ -3,11 +3,11 @@ import cv2
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from defined_globals import *
-from PerspectiveTransform_2 import * 
+from perspective_transform_2 import * 
 
 
 def getRegionOfInterest(img):
-    print(img.shape)
+    #print(img.shape)
     global srcPnt1, srcPnt2, srcPnt3, srcPnt4
     roi_corners = np.array([[srcPnt1, srcPnt2, srcPnt3, srcPnt4]])
 
@@ -15,7 +15,6 @@ def getRegionOfInterest(img):
     channel_count = 2 #img.shape[2]  # i.e. 3 or 4 depending on your image
     ignore_mask_color = (255,)*channel_count
     cv2.fillConvexPoly(mask, roi_corners, ignore_mask_color)
-    # from Masterfool: use cv2.fillConvexPoly if you know it's convex
 
     # apply the mask
     masked_image = cv2.bitwise_and(img, mask)
@@ -76,7 +75,7 @@ def pipeline(img, s_thresh=(125, 255), sx_thresh=(50, 100), sy_thread=(80, 100),
     combined_binary = np.zeros_like(sxbinary)
     combined_binary[(s_binary == 1) | (sxbinary == 1)] = 1
     
-    # Only consider region of interest, same as perspective transform
+    # Only consider region of interest
     combined_binary = getRegionOfInterest(combined_binary)
     return colored_binary, combined_binary
     
