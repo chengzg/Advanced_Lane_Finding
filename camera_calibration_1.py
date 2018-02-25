@@ -23,7 +23,6 @@ def displayImg(img, isGrayscale=False):
 
 def readImg(imgPath):
     img = mpimg.imread(imgPath)
-
     return img    
 
 def readFolderImgs(folderPath="."):
@@ -37,7 +36,7 @@ def readFolderImgs(folderPath="."):
     return jpgImgs
  
 def getAllPoints(imgPaths):
-    
+
     # 3D real obj points
     objPoints = []
     # 2D points in image
@@ -60,14 +59,11 @@ def getAllPoints(imgPaths):
             ret, corners = cv2.findChessboardCorners(gray, imgDimension, None)
             
             if (ret is True):
-                
                 print("find board corner for", index, path)
-
                 if (False):  
                     cv2.drawChessboardCorners(originalImg, imgDimension, corners, ret)
                     plt.imshow(originalImg)
                     plt.show()
-
 
                 imgPoints.append(corners)
                 objPoints.append(objPs)
@@ -102,14 +98,12 @@ if __name__ == "__main__":
         displayImg(originalImg);
         gray = processImg(originalImg)
         dstImg = getUndistortedImg(originalImg)
-
         displayImg(dstImg)
 
         originalImg = readImg(imgPaths[8])
         displayImg(originalImg);
         gray = processImg(originalImg)
         dstImg = getUndistortedImg(originalImg)
-
         displayImg(dstImg)
     except:
         print("Unexpected error:", sys.exc_info()[0])

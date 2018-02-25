@@ -13,9 +13,6 @@ def get_histogram(img):
     return histogram
 
 def get_left_right_x_base_from_histogram(histogram, left_margin=150, right_margin=1200-150):
-
-    #left_margin = 150
-    #right_margin = 1200 - 150
     midpoint = np.int(histogram.shape[0]/2)
 
     leftx_base = np.argmax(histogram[left_margin:midpoint]) + left_margin
@@ -25,8 +22,6 @@ def get_left_right_x_base_from_histogram(histogram, left_margin=150, right_margi
 
 
 def get_left_right_lane_fit(warped, leftx_base, rightx_base, nwindows=9, margin=100, minpix=50):
-    
-    #nwindows = 9
     window_height = np.int(warped.shape[0]/nwindows)
 
     leftx_current = leftx_base
@@ -82,24 +77,20 @@ def get_left_right_lane_pixel_polynomial_fit(leftx, lefty, rightx, righty):
     return left_fit, right_fit
 
 def compute_pixel_curvature(y_eval, left_fit, right_fit):
-    #y_eval = image.shape[0]
     left_curverad = ((1 + (2*left_fit[0]*y_eval + left_fit[1])**2)**1.5) / np.absolute(2*left_fit[0])
     right_curverad = ((1 + (2*right_fit[0]*y_eval + right_fit[1])**2)**1.5) / np.absolute(2*right_fit[0])
-    print(left_curverad, right_curverad)
+    #print(left_curverad, right_curverad)
     return left_curverad, right_curverad
 
 
 
 def get_left_right_lane_world_polynomial_fit(leftx, lefty, rightx, righty):
-
     # Fit new polynomials to x,y in world space
     left_fit_cr = np.polyfit(lefty*ym_per_pix, leftx*xm_per_pix, 2)
     right_fit_cr = np.polyfit(righty*ym_per_pix, rightx*xm_per_pix, 2)
     return left_fit_cr, right_fit_cr
 
-
-
-#compute the curvature
+#compute the world curvature
 def compute_world_curvature(y_eval, left_fit_cr, right_fit_cr):
 
     # Calculate the new radius of curvature
@@ -107,7 +98,7 @@ def compute_world_curvature(y_eval, left_fit_cr, right_fit_cr):
     left_curverad = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
     right_curverad = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
     # Now our radius of curvature is in meters
-    print(left_curverad, 'm', right_curverad, 'm')
+    #print(left_curverad, 'm', right_curverad, 'm')
 
     return left_curverad, right_curverad
 
@@ -125,7 +116,6 @@ def show_selection_windows(warped, left_fit, right_fit, left_lane_inds, right_la
     # Color in left and right line pixels
     out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
     out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
-
 
     left_fitx = left_fit[0]* ploty ** 2 + left_fit[1]*ploty + left_fit[2]
     right_fitx = right_fit[0]*ploty ** 2 + right_fit[1]*ploty + right_fit[2]
@@ -178,17 +168,14 @@ def visualize_polynomial_fit(warped, left_fit, right_fit, left_lane_inds, right_
     plt.show()
     
 
+# currently it is disabled.
 def update_region_of_interested(left_up, right_up, right_down, left_down, minv):
     
     src = np.float32([left_up, right_up, right_down, left_down])
     ones = np.ones(shape=(len(src), 1))
     src_ones = np.hstack([src, ones])
-    #print(src_ones.shape)    
-    #print(minv.shape)
     #dest = cv2.transform(src, minv)
     dest = minv.dot(src_ones.T).T
-    #print(src.shape)
-    #print(dest.shape)
     global srcPnt1, srcPnt2, srcPnt3, srcPnt4
     srcPnt1 = dest_left_up = dest[0][0:2]/dest[0][2]
     srcPnt1[0] -= 15
@@ -226,8 +213,6 @@ def mapto_original_image(image, warped, left_fit, right_fit):
     right_low = pts_right[0][0]
     left_low = pts_left[0][-1]
     #print(left_up, right_up, right_low, left_low)
-
-    
 
     # Draw the lane onto the warped blank image
     cv2.fillPoly(color_warp, np.int_([pts]), (0,255, 0))
@@ -292,7 +277,7 @@ def pass_sanity_check(left_line, right_line):
     con2 = right_line.curvature > 10000 and con2
     con4 = abs(right_line_x_average - right_line.x_value) > right_line_x_average
 
-    print(con1, con2, con3, con4)
+    #print(con1, con2, con3, con4)
     left_correct = True
     right_correct = True                                      
     if (con1 or con3):
@@ -357,20 +342,6 @@ def map_detected_region_to_image(image):
         left_fit_cr_pixel, right_fit_cr_pixel = compute_pixel_curvature(image.shape[0], left_fit, right_fit)
         left_fit_cr_world, right_fit_cr_world = get_left_right_lane_world_polynomial_fit(leftx, lefty, rightx, righty)
         left_fit_cr_world, right_fit_cr_world = compute_world_curvature(image.shape[0], left_fit_cr_world, right_fit_cr_world)
-
-#        out_img = np.dstack((warped, warped, warped))*255
-#        out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
-#        out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
-#        plt.imshow(out_img)
-#        ploty = np.linspace(0, warped.shape[0]-1, warped.shape[0] )
-#        left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
-#        right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
-#        plt.plot(left_fitx, ploty, color='yellow')
-#        plt.plot(right_fitx, ploty, color='yellow')
-#        plt.xlim(0, 1280)
-#        plt.ylim(720, 0)
-#        plt.show()
-
 
         # fill the left Line data
         left_line.curvature = left_fit_cr_world
@@ -452,7 +423,6 @@ def map_detected_region_to_image(image):
         show_selection_windows(warped, left_fit, right_fit, left_lane_inds, right_lane_inds)    
         visualize_polynomial_fit(warped, left_fit, right_fit, left_lane_inds, right_lane_inds)
 
-    
     result = mapto_original_image(image, warped, left_fit, right_fit)
     
     if (display):
@@ -465,7 +435,7 @@ def map_detected_region_to_image(image):
     cv2.putText(result, curvatureText, (230, 50), font, 0.8, (0, 255, 0), 2, cv2.LINE_AA)
 
     # Here is to export the processed image
-    export_image = True
+    export_image = False
     if (export_image):
         imgPath = "images_1/image_" + str(current_frame_index) + ".jpg"
         mpimg.imsave(imgPath, result)        
@@ -482,12 +452,11 @@ def testVideo():
 
     #clip1 = VideoFileClip(inputVideo).subclip(0, 5)
     clip1 = VideoFileClip(inputVideo)
-    ##clip1 = VideoFileClip("test_videos/solidWhiteRight.mp4")
     output_clip = clip1.fl_image(map_detected_region_to_image) #NOTE: this function expects color images!!
     #output_clip = clip1.fl_image(exportimage)
     output_clip.write_videofile(outputVideo, audio=False)
 
-display = True
+display = False
 if __name__ == "__main__":
 
     #image = mpimg.imread('test_images/test6.jpg')
@@ -526,7 +495,6 @@ if __name__ == "__main__":
         #result = map_detected_region_to_image(image)
         #plt.imshow(result)
         #plt.show()
-
         
         print("--------------------------------")
     except:

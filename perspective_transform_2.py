@@ -8,7 +8,6 @@ def computerM_Minv():
     # it is the sample image
     imgPath = "test_images/straight_lines.jpg"
     img = readImg(imgPath)
-    #img = getUndistortedImg(img)
     src = np.float32(
             [srcWrapPnt1,
             srcWrapPnt2,
@@ -55,10 +54,7 @@ if __name__ == "__main__":
     #imgPath = "images/image_1.jpg"
     #imgPath = "images/image_619.jpg"
     originalImg = readImg(imgPath)
-    displayImg(originalImg);
-    #gray = processImg(originalImg)
-    #undistortedImg = getUndistortedImg(originalImg)
-    
+    displayImg(originalImg);   
     undistortedImg = getUndistortedImg(originalImg)
 
     display = True;
@@ -79,8 +75,5 @@ if __name__ == "__main__":
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.add_line(line)
-    #line1 = plt.plot(300, 0, 300, 719, ls="-", label='line 1', color="r", linewidth=2)
-    #line2 = plt.plot(900, 0, 900, 719, ls="-", label='line 2', color="r", linewidth=2)
-    #plt.setp(line1)
     plt.imshow(warped)
     plt.show()
