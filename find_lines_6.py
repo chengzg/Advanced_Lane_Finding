@@ -70,7 +70,6 @@ def get_left_right_lane_fit(warped, leftx_base, rightx_base, nwindows=9, margin=
     left_lane_inds = np.concatenate(left_lane_inds)
     right_lane_inds = np.concatenate(right_lane_inds)
 
-
     return left_lane_inds, right_lane_inds
 
 
@@ -103,7 +102,7 @@ def get_left_right_lane_world_polynomial_fit(leftx, lefty, rightx, righty):
 #compute the curvature
 def compute_world_curvature(y_eval, left_fit_cr, right_fit_cr):
 
-    # Calculate the new radii of curvature
+    # Calculate the new radius of curvature
     # y_eval = image.shape[0]
     left_curverad = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
     right_curverad = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
@@ -238,7 +237,7 @@ def mapto_original_image(image, warped, left_fit, right_fit):
         plt.show()
 
     Minv = get_minv();
-    update_region_of_interested(left_up, right_up, right_low, left_low, Minv)
+    #update_region_of_interested(left_up, right_up, right_low, left_low, Minv)
     # Warp the blank back to original image space using inverse perspective matrix (Minv)
     newwarp = cv2.warpPerspective(color_warp, Minv, (image.shape[1], image.shape[0]))
     if (display):
@@ -246,8 +245,6 @@ def mapto_original_image(image, warped, left_fit, right_fit):
         plt.show()
 
     # Combine the result with the original image.
-    print(image.shape)
-    print(newwarp.shape)
     result = cv2.addWeighted(image[:,:,:3], 1, newwarp, 0.3, 0)
 
     return result
@@ -268,7 +265,7 @@ def pass_sanity_check(left_line, right_line):
     global left_line_history, right_line_history
 
     if (len(left_line_history) == 0):
-        return True
+        return True, True, 0, 0
         
     left_curvature_sum = 0;
     left_x_sum = 0 
@@ -285,18 +282,28 @@ def pass_sanity_check(left_line, right_line):
         right_x_sum += line.x_value
     right_curvature_average = right_curvature_sum / len(right_line_history)
     right_line_x_average = right_x_sum / len(right_line_history)
-                                                            
-    con1 = abs(left_curvature_average - left_line.curvature) >  left_curvature_average
-    con2 = abs(right_curvature_average - right_line.curvature) > right_curvature_average
+
+    # checking condition to pass the sanity check                                           
+    con1 = abs(left_curvature_average - left_line.curvature) >  2 * left_curvature_average
+    con1 = left_line.curvature > 10000 and con1
     con3 = abs(left_line_x_average - left_line.x_value) > left_line_x_average
+    
+    con2 = abs(right_curvature_average - right_line.curvature) > 2 * right_curvature_average
+    con2 = right_line.curvature > 10000 and con2
     con4 = abs(right_line_x_average - right_line.x_value) > right_line_x_average
-    print(con1, con2, con3, con4)                                      
-    if (con1 or con2 or con3 or con4):
-        return True;        #return False
-    return True;
+
+    print(con1, con2, con3, con4)
+    left_correct = True
+    right_correct = True                                      
+    if (con1 or con3):
+        left_correct = False;
+
+    if (con2 or con4):
+        right_correct = False
+
+    return left_correct, right_correct, left_curvature_average, right_curvature_average;
 
 def exportimage(image):
-    print(image.shape)
     global current_frame_index;
     current_frame_index += 1
     imgPath = "images_1/image_" + str(current_frame_index) + ".jpg"
@@ -305,11 +312,11 @@ def exportimage(image):
     return newImage
 
 def map_detected_region_to_image(image):
-    print(image.shape)
     global left_line_history, right_line_history, current_frame_index
     current_frame_index += 1
 
     colored_result, combined_result = pipeline(image)
+
     global display;
     if (display):
         plt.imshow(image)
@@ -318,22 +325,24 @@ def map_detected_region_to_image(image):
 
     if (display):
         plt.imshow(combined_result)
-        
         plt.show()
-    warped = warp(combined_result)
+    
+    combined_result_undistorted = getUndistortedImg(combined_result);
+    warped = warp(combined_result_undistorted)
+    if (display):
+        plt.imshow(warped)
+        plt.show()
 
     nonzero = warped.nonzero()
     nonzeroy = np.array(nonzero[0])
     nonzerox = np.array(nonzero[1])
 
     needToRestartSlidingWindowFinding = False
-    if len(left_line_history) == 0 or (current_frame_index - left_line_history[-1].frame_index) > 5:
+    if len(left_line_history) == 0 or (current_frame_index - left_line_history[-1].frame_index) > 3:
         needToRestartSlidingWindowFinding = True;
     
     left_line = Line();
     right_line = Line();
-
-    needToRestartSlidingWindowFinding = True;
 
     if (needToRestartSlidingWindowFinding is True):
         histogram = get_histogram(warped);
@@ -375,7 +384,6 @@ def map_detected_region_to_image(image):
         right_line.line_fit = right_fit
         right_line.x_value = np.sum(rightx)/len(rightx)
 
-
     else:
         # use the previous found correct data to speed computation
         margin_offset = 100       
@@ -409,8 +417,6 @@ def map_detected_region_to_image(image):
         left_fit_cr_world, right_fit_cr_world = get_left_right_lane_world_polynomial_fit(leftx, lefty, rightx, righty)
         left_fit_cr_world, right_fit_cr_world = compute_world_curvature(image.shape[0], left_fit_cr_world, right_fit_cr_world)
 
-
-
         # fill the left Line data
         left_line.curvature = left_fit_cr_world
         left_line.frame_index = current_frame_index
@@ -423,17 +429,23 @@ def map_detected_region_to_image(image):
         right_line.line_fit = right_fit
         right_line.x_value = sum(rightx)/len(rightx)
 
-    # check whether it passes the sanity check
-    if (pass_sanity_check(left_line, right_line)):
-        left_line_history.append(left_line)
-        right_line_history.append(right_line)
-        if (len(left_line_history) > 10):
-            left_line_history.pop(0)
-            right_line_history.pop(0)        
-    else:
-        # use the last correct frame data
+    # check whether it passes the sanity check, use the last correct frame data if it fails
+    left_pass, right_pass, left_curvature_average, right_curvature_average = pass_sanity_check(left_line, right_line) 
+    if ( left_pass == False):
+        left_line= left_line_history[-1]
+        left_line.curvature = left_curvature_average
         left_fit = left_line_history[-1].line_fit
+    
+    if (right_pass == False):        
+        right_line = right_line_history[-1] 
+        right_line.curvature = right_curvature_average
         right_fit = right_line_history[-1].line_fit
+
+    left_line_history.append(left_line)
+    right_line_history.append(right_line)
+    if (len(left_line_history) > 10):
+        left_line_history.pop(0)
+        right_line_history.pop(0)        
 
     global display;
     if (display):
@@ -448,6 +460,9 @@ def map_detected_region_to_image(image):
         show_region_of_interests(result)
         plt.show()
     
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    curvatureText = "radius of curvature: " + str(int(left_line.curvature + right_line.curvature) / 2);
+    cv2.putText(result, curvatureText, (230, 50), font, 0.8, (0, 255, 0), 2, cv2.LINE_AA)
 
     # Here is to export the processed image
     export_image = True
@@ -472,7 +487,7 @@ def testVideo():
     #output_clip = clip1.fl_image(exportimage)
     output_clip.write_videofile(outputVideo, audio=False)
 
-display = False
+display = True
 if __name__ == "__main__":
 
     #image = mpimg.imread('test_images/test6.jpg')
@@ -492,7 +507,12 @@ if __name__ == "__main__":
             #testing_start = 579             
             #testing_start = 1027
             #testing_start = 1250
-            testing_start = 18
+            testing_start = 1
+            testing_start = 8
+            testing_start = 306
+            testing_start = 410
+            #testing_start = 619
+            #testing_start = 1229
             for i in range(50):
                 imagePath = imageName + str(testing_start + i) + ".jpg"
                 image = mpimg.imread(imagePath)        

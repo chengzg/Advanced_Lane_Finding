@@ -1,12 +1,12 @@
 
 # for camera calibration
-mtx = dist = newcameramtx = None
+mtx = dist = None
 
-# define the constants to do the transform
-srcWrapPnt1  = [559,  457] #left_up
-srcWrapPnt2  = [732,  457] #right_up
-srcWrapPnt3  = [1191, 719] #right_down
-srcWrapPnt4  = [138,  719] #right_up
+# define the constants to do the perspective transform
+srcWrapPnt1  = [578,  460] #left_up
+srcWrapPnt2  = [710,  460] #right_up
+srcWrapPnt3  = [1174, 719] #right_down
+srcWrapPnt4  = [230,  719] #left_down
 
 destWrapPnt1 = [300,  0]
 destWrapPnt2 = [900,  0]
@@ -14,10 +14,10 @@ destWrapPnt3 = [900,  719]
 destWrapPnt4 = [300,  719]
 
 #define the initial value to do region of interest
-srcPnt1  = [559,  457]
-srcPnt2  = [722,  457]
+srcPnt1  = [539,  457]
+srcPnt2  = [780,  457]
 srcPnt3  = [1251, 719]
-srcPnt4  = [188,  719]
+srcPnt4  = [138,  719]
 
 #define the camera transformation matrix
 M = None

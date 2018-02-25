@@ -8,7 +8,9 @@ from defined_globals import *
 #%matplotlib inline
 
 def processImg(img):
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    img_shape=img.shape
+    if len(img_shape) == 3:
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
     return img
 
@@ -77,23 +79,26 @@ def getAllPoints(imgPaths):
         print("Unexpected error:", sys.exc_info()[0])
 
 def getUndistortedImg(inputImg, imgPaths=None):
-    global mtx, dist, newcameramtx;
-    if newcameramtx is None:
+    global mtx, dist;
+
+    if mtx is None:
         if (imgPaths is None):
             imgPaths = readFolderImgs("./camera_cal")
         gray = processImg(inputImg)
+        print(gray.shape[::-1])
         imgPoints, objPoints = getAllPoints(imgPaths);
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objPoints, imgPoints, gray.shape[::-1], None, None)
-        h, w = inputImg.shape[:2]
-        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
 
-    dstImg = cv2.undistort(inputImg, mtx, dist, None, newcameramtx)
+    dstImg = cv2.undistort(inputImg, mtx, dist, None, mtx)    
     return dstImg
 
 if __name__ == "__main__":
     try:
         imgPaths = readFolderImgs("./camera_cal");
-        originalImg = readImg(imgPaths[13])
+        imgPath = imgPaths[13]
+        #imgPath = "test_images/straight_lines.jpg"
+        #imgPath = "images/image_582.jpg"
+        originalImg = readImg(imgPath)
         displayImg(originalImg);
         gray = processImg(originalImg)
         dstImg = getUndistortedImg(originalImg)

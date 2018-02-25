@@ -6,8 +6,9 @@ from matplotlib.lines import Line2D
 def computerM_Minv():
     global M, Minv
     # it is the sample image
-    imgPath = "test_images/straight_lines1.jpg"
+    imgPath = "test_images/straight_lines.jpg"
     img = readImg(imgPath)
+    #img = getUndistortedImg(img)
     src = np.float32(
             [srcWrapPnt1,
             srcWrapPnt2,
@@ -31,8 +32,6 @@ def get_minv():
     return Minv
 
 def warp(img):
-    img = getUndistortedImg(img)
-
     global M
     img_size = (img.shape[1], img.shape[0])
     if (M is None):
@@ -44,7 +43,7 @@ def warp(img):
 
 if __name__ == "__main__":
     
-    #imgPath = "test_images/straight_lines1.jpg"
+    imgPath = "test_images/straight_lines.jpg"
     #imgPath = "test_images/test1.jpg"
     #imgPath = "test_images/test2.jpg"
     #imgPath = "test_images/test3.jpg"
@@ -52,21 +51,26 @@ if __name__ == "__main__":
     #imgPath = "test_images/test5.jpg"
     #imgPath = "test_images/test6.jpg"
     #imgPath = "images/image_533.jpg"
-    imgPath = "images/image_582.jpg"
+    #imgPath = "images/image_582.jpg"
+    #imgPath = "images/image_1.jpg"
+    #imgPath = "images/image_619.jpg"
     originalImg = readImg(imgPath)
-    #displayImg(originalImg);
+    displayImg(originalImg);
     #gray = processImg(originalImg)
     #undistortedImg = getUndistortedImg(originalImg)
+    
+    undistortedImg = getUndistortedImg(originalImg)
 
-    display = False;
+    display = True;
     if (display):
         plt.imshow(originalImg)
-        plt.plot(579,  457, ".")
-        plt.plot(702,  457, ".")
-        plt.plot(1121, 719, ".")
-        plt.plot(188,  719, ".")
+        plt.plot(srcWrapPnt1[0],  srcWrapPnt1[1], ".")
+        plt.plot(srcWrapPnt2[0],  srcWrapPnt2[1], ".")
+        plt.plot(srcWrapPnt3[0],  srcWrapPnt3[1], ".")
+        plt.plot(srcWrapPnt4[0],  srcWrapPnt4[1], ".")
         plt.show()
 
+    
     warped = warp(originalImg)
     
     xs = [300, 300, 900, 900]

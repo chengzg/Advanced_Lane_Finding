@@ -24,7 +24,7 @@ def getRegionOfInterest(img):
     return masked_image
 
 # Edit this function to create your own pipeline.
-def pipeline(img, s_thresh=(125, 255), sx_thresh=(50, 100), sy_thread=(80, 100), l_thresh=(50,255)):
+def pipeline(img, s_thresh=(105, 255), sx_thresh=(50, 100), sy_thread=(80, 100), l_thresh=(50,255)):
     # Convert to HLS color space and separate the V channel
     hls = cv2.cvtColor(img, cv2.COLOR_RGB2HLS).astype(np.float)
     s_channel = hls[:,:,2]
@@ -37,12 +37,12 @@ def pipeline(img, s_thresh=(125, 255), sx_thresh=(50, 100), sy_thread=(80, 100),
     sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0) # Take the derivative in x
     abs_sobelx = np.absolute(sobelx) # Absolute x derivative to accentuate lines away from horizontal
     scaled_sobel = np.uint8(255*abs_sobelx/np.max(abs_sobelx))
-    print("scaled_sobel")
+    #print("scaled_sobel")
     #print(scaled_sobel)
     # Threshold x gradient
     sxbinary = np.zeros_like(scaled_sobel)
     sxbinary[(scaled_sobel >= sx_thresh[0]) & (scaled_sobel <= sx_thresh[1])] = 1
-    print("sxbinary")
+    #print("sxbinary")
     #print(sxbinary)
 
     # sobel y
@@ -60,7 +60,7 @@ def pipeline(img, s_thresh=(125, 255), sx_thresh=(50, 100), sy_thread=(80, 100),
     l_pick = (l_channel >= l_thresh[0]) & (l_channel <= l_thresh[1])
     s_binary[ s_pick & l_pick] = 1
     #s_binary[ s_pick] = 1
-    print("s_binary")
+    #print("s_binary")
     #print(s_binary)
 
     
@@ -68,7 +68,7 @@ def pipeline(img, s_thresh=(125, 255), sx_thresh=(50, 100), sy_thread=(80, 100),
     # Note color_binary[:, :, 0] is all 0s, effectively an all black image. It might
     # be beneficial to replace this channel with something else.
     colored_binary = np.dstack(( np.zeros_like(sxbinary), sxbinary, s_binary)) * 255
-    print("colored_binary")
+    #print("colored_binary")
     #print(colored_binary)
     
     # Combine the two binary thresholds
@@ -86,7 +86,10 @@ if __name__ == "__main__":
         #start = 559
         #start = 1250
         #start = 1029
-        start = 1250
+        #start = 1250        
+        start = 1
+        start = 619
+        #start = 1229
         number = 50
         for i in range(number):
             imagePath = "images/image_" + str(start + i) + ".jpg"
